@@ -6,6 +6,10 @@
     <title>Outlive Tracker</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
         /* Custom styles for the medical/hacker aesthetic */
         body {
@@ -28,6 +32,12 @@
         .btn-primary:hover {
             background-color: #1d4ed8; /* blue-700 */
         }
+        .btn-secondary {
+            background-color: #334155; /* slate-700 */
+        }
+        .btn-secondary:hover {
+            background-color: #475569; /* slate-600 */
+        }
         .input-field {
             background-color: #1e293b; /* slate-800 */
             border: 1px solid #334155; /* slate-700 */
@@ -39,182 +49,212 @@
 </head>
 <body class="font-mono p-4 sm:p-6 lg:p-8">
 
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
+    <!-- Auth Container -->
+    <div id="auth-container" class="max-w-md mx-auto">
         <header class="mb-8 text-center">
             <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Outlive <span class="text-blue-500">Tracker</span></h1>
-            <p class="text-sm text-gray-400">The Centenarian's Log: Your Dashboard for Healthspan</p>
+            <p class="text-sm text-gray-400">Login or Sign Up to continue</p>
         </header>
+        <div class="card p-6 space-y-4">
+            <div>
+                <label for="email-input" class="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                <input type="email" id="email-input" class="input-field w-full" placeholder="you@example.com">
+            </div>
+            <div>
+                <label for="password-input" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
+                <input type="password" id="password-input" class="input-field w-full" placeholder="••••••••">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+                <button id="login-btn" class="btn-primary w-full">Login</button>
+                <button id="signup-btn" class="btn-secondary btn-primary w-full">Sign Up</button>
+            </div>
+             <p class="text-xs text-center text-gray-500">Password should be at least 6 characters.</p>
+        </div>
+    </div>
 
-        <main class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <!-- Left Column -->
-            <div class="lg:col-span-3 space-y-6">
-                <!-- Section 1: Profile & Settings -->
-                <section id="profile-section" class="card p-6">
-                    <h2 class="text-xl font-semibold text-white mb-4">Profile & Settings</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="weight-input" class="block text-sm font-medium text-gray-300 mb-1">Body Weight (kg)</label>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" id="weight-input" class="input-field w-32" placeholder="e.g., 80">
-                                <button id="save-weight-btn" class="btn-primary">Save</button>
-                            </div>
-                        </div>
-                        <p class="text-sm text-gray-400 relative group">
-                            Daily Protein Target (1.6g/kg): 
-                            <span id="protein-target-display" class="font-bold text-white">N/A</span>
-                            <span class="ml-1 inline-block cursor-pointer text-blue-400 border border-blue-400 rounded-full w-4 h-4 text-center text-xs font-mono leading-tight">?</span>
-                            <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs p-2 text-xs text-white bg-slate-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                This is based on Peter Attia's recommendation of 1.6 grams of protein per kilogram of body weight for muscle mass maintenance.
-                            </span>
-                        </p>
-                    </div>
-                </section>
+    <!-- Main App Container -->
+    <div id="app-container" class="hidden">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <header class="mb-8 flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">Outlive <span class="text-blue-500">Tracker</span></h1>
+                    <p id="user-email-display" class="text-sm text-gray-400">The Centenarian's Log</p>
+                </div>
+                <button id="logout-btn" class="btn-secondary btn-primary">Logout</button>
+            </header>
 
-                <!-- Section 2: Weekly Progress -->
-                <section id="progress-section" class="card p-6">
-                    <h2 class="text-xl font-semibold text-white mb-4">Weekly At-a-Glance</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Weekly Zone 2 Cardio Target</label>
-                            <div class="flex items-center space-x-4">
-                                <div class="w-full bg-slate-800 rounded-full h-2.5">
-                                    <div id="zone2-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-                                </div>
-                                <div class="text-right">
-                                    <span id="zone2-progress-text" class="text-sm font-medium text-white">0 / 180 min</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-                            <div class="bg-slate-800 p-3 rounded-lg text-center">
-                                <span id="strength-summary" class="text-2xl font-bold text-white">0</span>
-                                <p class="text-xs text-gray-400">Strength Sessions</p>
-                            </div>
-                            <div class="bg-slate-800 p-3 rounded-lg text-center">
-                                <span id="sleep-summary" class="text-2xl font-bold text-white">0.0</span>
-                                <p class="text-xs text-gray-400">Avg. Weekly Sleep</p>
-                            </div>
-                            <div class="bg-slate-800 p-3 rounded-lg text-center">
-                                <span id="alcohol-summary" class="text-2xl font-bold text-white">0</span>
-                                <p class="text-xs text-gray-400">Alcohol-Free Days</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Section 3: Daily Log Form -->
-                <section id="log-form-section" class="card p-6">
-                    <button id="log-form-toggle" class="w-full text-left font-semibold text-white focus:outline-none">
-                        <div class="flex justify-between items-center">
-                            <span>Log Daily Metrics</span>
-                            <svg id="accordion-icon" class="w-5 h-5 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </button>
-                    <form id="daily-log-form" class="mt-4 space-y-4 hidden">
-                        <!-- Date -->
-                        <div>
-                            <label for="log-date" class="block text-sm font-medium text-gray-300">Date</label>
-                            <input type="date" id="log-date" class="input-field w-full">
-                        </div>
-                        
-                        <!-- Exercise -->
-                        <fieldset class="border-t border-slate-700 pt-4">
-                            <legend class="text-base font-medium text-white mb-2">Exercise</legend>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="zone2-input" class="block text-sm font-medium text-gray-300">Zone 2 Cardio (minutes)</label>
-                                    <input type="number" id="zone2-input" class="input-field w-full" placeholder="e.g., 45">
-                                </div>
-                                <div>
-                                    <label for="zone5-input" class="block text-sm font-medium text-gray-300">Zone 5 / VO2 Max (minutes)</label>
-                                    <input type="number" id="zone5-input" class="input-field w-full" placeholder="e.g., 4">
-                                </div>
-                            </div>
-                            <div class="mt-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="strength-input" class="h-5 w-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-2 text-sm text-gray-300">Strength Training Session</span>
-                                </label>
-                            </div>
-                        </fieldset>
-
-                        <!-- Recovery -->
-                        <fieldset class="border-t border-slate-700 pt-4">
-                            <legend class="text-base font-medium text-white mb-2">Recovery</legend>
+            <main class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                <!-- Left Column -->
+                <div class="lg:col-span-3 space-y-6">
+                    <!-- Section 1: Profile & Settings -->
+                    <section id="profile-section" class="card p-6">
+                        <h2 class="text-xl font-semibold text-white mb-4">Profile & Settings</h2>
+                        <div class="space-y-4">
                             <div>
-                                <label for="sleep-input" class="block text-sm font-medium text-gray-300">Sleep (hours)</label>
-                                <input type="number" id="sleep-input" class="input-field w-full" placeholder="e.g., 7.5">
+                                <label for="weight-input" class="block text-sm font-medium text-gray-300 mb-1">Body Weight (kg)</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" id="weight-input" class="input-field w-32" placeholder="e.g., 80">
+                                    <button id="save-weight-btn" class="btn-primary">Save</button>
+                                </div>
                             </div>
-                            <div class="mt-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="alcohol-input" class="h-5 w-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-2 text-sm text-gray-300">Consumed Alcohol</span>
-                                </label>
-                            </div>
-                        </fieldset>
-
-                        <!-- Nutrition -->
-                        <fieldset class="border-t border-slate-700 pt-4">
-                            <legend class="text-base font-medium text-white mb-2">Nutrition</legend>
-                            <div class="mt-2">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="protein-input" class="h-5 w-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-2 text-sm text-gray-300">Hit Daily Protein Target</span>
-                                </label>
-                            </div>
-                        </fieldset>
-
-                        <div class="pt-4">
-                            <button type="submit" id="save-log-btn" class="btn-primary w-full sm:w-auto">Save Log</button>
+                            <p class="text-sm text-gray-400 relative group">
+                                Daily Protein Target (1.6g/kg): 
+                                <span id="protein-target-display" class="font-bold text-white">N/A</span>
+                                <span class="ml-1 inline-block cursor-pointer text-blue-400 border border-blue-400 rounded-full w-4 h-4 text-center text-xs font-mono leading-tight">?</span>
+                                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs p-2 text-xs text-white bg-slate-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    This is based on Peter Attia's recommendation of 1.6 grams of protein per kilogram of body weight for muscle mass maintenance.
+                                </span>
+                            </p>
                         </div>
-                    </form>
-                </section>
-            </div>
+                    </section>
 
-            <!-- Right Column -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Section 4: Historical Data -->
-                <section id="history-section" class="card p-4 sm:p-6">
-                    <h2 class="text-xl font-semibold text-white mb-4">Historical Data</h2>
-                    
-                    <!-- Desktop Table View -->
-                    <div class="overflow-x-auto hidden md:block">
-                        <table class="min-w-full text-sm text-left">
-                            <thead class="bg-slate-800">
-                                <tr>
-                                    <th scope="col" class="p-3">Date</th>
-                                    <th scope="col" class="p-3">Zone 2</th>
-                                    <th scope="col" class="p-3">Zone 5</th>
-                                    <th scope="col" class="p-3">Strength</th>
-                                    <th scope="col" class="p-3">Sleep</th>
-                                    <th scope="col" class="p-3">Alcohol</th>
-                                    <th scope="col" class="p-3">Protein</th>
-                                    <th scope="col" class="p-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-table-body" class="divide-y divide-slate-800">
-                                <!-- JS will populate this -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <!-- Section 2: Weekly Progress -->
+                    <section id="progress-section" class="card p-6">
+                        <h2 class="text-xl font-semibold text-white mb-4">Weekly At-a-Glance</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-1">Weekly Zone 2 Cardio Target</label>
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-full bg-slate-800 rounded-full h-2.5">
+                                        <div id="zone2-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span id="zone2-progress-text" class="text-sm font-medium text-white">0 / 180 min</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                                <div class="bg-slate-800 p-3 rounded-lg text-center">
+                                    <span id="strength-summary" class="text-2xl font-bold text-white">0</span>
+                                    <p class="text-xs text-gray-400">Strength Sessions</p>
+                                </div>
+                                <div class="bg-slate-800 p-3 rounded-lg text-center">
+                                    <span id="sleep-summary" class="text-2xl font-bold text-white">0.0</span>
+                                    <p class="text-xs text-gray-400">Avg. Weekly Sleep</p>
+                                </div>
+                                <div class="bg-slate-800 p-3 rounded-lg text-center">
+                                    <span id="alcohol-summary" class="text-2xl font-bold text-white">0</span>
+                                    <p class="text-xs text-gray-400">Alcohol-Free Days</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-                    <!-- Mobile Card View -->
-                    <div id="history-cards-container" class="space-y-4 md:hidden">
-                        <!-- JS will populate this -->
-                    </div>
-                </section>
-            </div>
-        </main>
-        
-        <footer class="text-center text-xs text-gray-500 mt-12">
-            <p>Built for the modern longevity enthusiast. Inspired by Peter Attia's "Outlive".</p>
-        </footer>
+                    <!-- Section 3: Daily Log Form -->
+                    <section id="log-form-section" class="card p-6">
+                        <button id="log-form-toggle" class="w-full text-left font-semibold text-white focus:outline-none">
+                            <div class="flex justify-between items-center">
+                                <span>Log Daily Metrics</span>
+                                <svg id="accordion-icon" class="w-5 h-5 transition-transform transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </button>
+                        <form id="daily-log-form" class="mt-4 space-y-4 hidden">
+                            <!-- Date -->
+                            <div>
+                                <label for="log-date" class="block text-sm font-medium text-gray-300">Date</label>
+                                <input type="date" id="log-date" class="input-field w-full">
+                            </div>
+                            
+                            <!-- Exercise -->
+                            <fieldset class="border-t border-slate-700 pt-4">
+                                <legend class="text-base font-medium text-white mb-2">Exercise</legend>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="zone2-input" class="block text-sm font-medium text-gray-300">Zone 2 Cardio (minutes)</label>
+                                        <input type="number" id="zone2-input" class="input-field w-full" placeholder="e.g., 45">
+                                    </div>
+                                    <div>
+                                        <label for="zone5-input" class="block text-sm font-medium text-gray-300">Zone 5 / VO2 Max (minutes)</label>
+                                        <input type="number" id="zone5-input" class="input-field w-full" placeholder="e.g., 4">
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="strength-input" class="h-5 w-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-300">Strength Training Session</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Recovery -->
+                            <fieldset class="border-t border-slate-700 pt-4">
+                                <legend class="text-base font-medium text-white mb-2">Recovery</legend>
+                                <div>
+                                    <label for="sleep-input" class="block text-sm font-medium text-gray-300">Sleep (hours)</label>
+                                    <input type="number" id="sleep-input" class="input-field w-full" placeholder="e.g., 7.5">
+                                </div>
+                                <div class="mt-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="alcohol-input" class="h-5 w-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-300">Consumed Alcohol</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <!-- Nutrition -->
+                            <fieldset class="border-t border-slate-700 pt-4">
+                                <legend class="text-base font-medium text-white mb-2">Nutrition</legend>
+                                <div class="mt-2">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="protein-input" class="h-5 w-5 rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-300">Hit Daily Protein Target</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <div class="pt-4">
+                                <button type="submit" id="save-log-btn" class="btn-primary w-full sm:w-auto">Save Log</button>
+                            </div>
+                        </form>
+                    </section>
+                </div>
+
+                <!-- Right Column -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Section 4: Historical Data -->
+                    <section id="history-section" class="card p-4 sm:p-6">
+                        <h2 class="text-xl font-semibold text-white mb-4">Historical Data</h2>
+                        
+                        <!-- Desktop Table View -->
+                        <div class="overflow-x-auto hidden md:block">
+                            <table class="min-w-full text-sm text-left">
+                                <thead class="bg-slate-800">
+                                    <tr>
+                                        <th scope="col" class="p-3">Date</th>
+                                        <th scope="col" class="p-3">Zone 2</th>
+                                        <th scope="col" class="p-3">Zone 5</th>
+                                        <th scope="col" class="p-3">Strength</th>
+                                        <th scope="col" class="p-3">Sleep</th>
+                                        <th scope="col" class="p-3">Alcohol</th>
+                                        <th scope="col" class="p-3">Protein</th>
+                                        <th scope="col" class="p-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body" class="divide-y divide-slate-800">
+                                    <!-- JS will populate this -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Card View -->
+                        <div id="history-cards-container" class="space-y-4 md:hidden">
+                            <!-- JS will populate this -->
+                        </div>
+                    </section>
+                </div>
+            </main>
+            
+            <footer class="text-center text-xs text-gray-500 mt-12">
+                <p>Built for the modern longevity enthusiast. Inspired by Peter Attia's "Outlive".</p>
+            </footer>
+        </div>
     </div>
 
     <div id="notification-bubble" class="fixed bottom-5 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
         <!-- Notification message goes here -->
     </div>
+    <script src="firebase-config.js"></script>
     <script src="app.js" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
