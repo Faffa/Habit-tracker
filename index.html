@@ -254,12 +254,11 @@
     <div id="notification-bubble" class="fixed bottom-5 right-5 bg-green-600 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-300">
         <!-- Notification message goes here -->
     </div>
-    <script src="firebase-config.js"></script>
     <script src="app.js" defer></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('sw.js')
                     .then(registration => {
                         console.log('ServiceWorker registration successful with scope: ', registration.scope);
                     })
