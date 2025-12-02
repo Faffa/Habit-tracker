@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outlive: Longevity Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .card { background-color: #1e293b; transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); }
+        .btn-primary { background-color: #3b82f6; }
+        .btn-primary:hover { background-color: #2563eb; }
+        /* Custom Progress Bar styling */
+        progress::-webkit-progress-bar { background-color: #334155; border-radius: 99px; }
+        progress::-webkit-progress-value { background-color: #22c55e; border-radius: 99px; }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center">
+
+    <header class="w-full max-w-md text-center mb-6">
+        <h1 class="text-3xl font-bold tracking-tight text-blue-400">
+            <i class="fa-solid fa-heart-pulse mr-2"></i>OUTLIVE
+        </h1>
+        <div class="mt-4 bg-slate-800 rounded-lg p-3 flex justify-between items-center border border-slate-700">
+            <div>
+                <div class="text-xs text-slate-400">CURRENT STREAK</div>
+                <div class="text-xl font-bold text-white">5 Days <span class="text-orange-500">🔥</span></div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-slate-400">WEEKLY ZONE 2</div>
+                <div class="text-sm font-bold text-white">120 / 180 mins</div>
+                <progress value="66" max="100" class="h-2 w-24"></progress>
+            </div>
+        </div>
+    </header>
+
+    <div class="w-full max-w-md mb-6">
+        <button id="connectBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-blue-400 font-semibold py-2 px-4 rounded-lg border border-blue-900 border-dashed flex items-center justify-center transition">
+            <i class="fa-brands fa-bluetooth-b mr-2"></i> Connect Xiaomi Band 10
+        </button>
+        <div id="liveHeartRate" class="hidden mt-2 text-center text-green-400 text-sm font-mono animate-pulse">
+            <i class="fa-solid fa-heart-pulse"></i> LIVE HR: <span id="hrValue">--</span> BPM
+        </div>
+    </div>
+
+    <main class="w-full max-w-md space-y-6">
+        
+        <div class="card p-5 rounded-xl border border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-white">Log Today's Data</h2>
+                <span class="text-xs text-slate-500" id="currentDateDisplay"></span>
+            </div>
+            
+            <form id="trackerForm" class="space-y-5">
+                <input type="date" id="dateInput" class="hidden">
+
+                <div class="space-y-3 pb-4 border-b border-slate-700">
+                    <label class="text-xs font-bold text-blue-400 uppercase tracking-wider">Exercise</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Zone 2 (Mins)</label>
+                            <input type="number" id="zone2Input" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Zone 5 (Mins)</label>
+                            <input type="number" id="zone5Input" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 mt-2">
+                        <input type="checkbox" id="strengthInput" class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-blue-600">
+                        <label for="strengthInput" class="text-sm text-slate-300">Done Strength/Stability?</label>
+                    </div>
+                </div>
+
+                <div class="space-y-3 pb-4 border-b border-slate-700">
+                    <label class="text-xs font-bold text-purple-400 uppercase tracking-wider">Recovery</label>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-1">
+                            <label class="text-xs text-slate-400 block mb-1">Sleep (Hrs)</label>
+                            <input type="number" step="0.1" id="sleepInput" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center focus:border-purple-500 outline-none">
+                        </div>
+                        <div class="flex-1">
+                             <label class="text-xs text-slate-400 block mb-1">Alcohol?</label>
+                             <select id="alcoholInput" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-center focus:border-red-500 outline-none">
+                                 <option value="false">No</option>
+                                 <option value="true">Yes</option>
+                             </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="text-xs font-bold text-green-400 uppercase tracking-wider">Nutrition</label>
+                    <div class="flex items-center space-x-3">
+                        <input type="checkbox" id="proteinInput" class="w-4 h-4 rounded bg-slate-700 border-slate-600 text-green-600">
+                        <label for="proteinInput" class="text-sm text-slate-300">Hit Protein Target (>1.6g/kg)?</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-lg shadow-lg mt-4">
+                    Submit Entry
+                </button>
+            </form>
+        </div>
+
+        <div class="w-full overflow-x-auto">
+            <h3 class="text-sm font-semibold mb-3 text-slate-400 uppercase">Recent Logs</h3>
+            <table class="w-full text-left text-sm text-slate-400">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-800">
+                    <tr>
+                        <th class="px-3 py-2 rounded-l-lg">Date</th>
+                        <th class="px-3 py-2">Z2</th>
+                        <th class="px-3 py-2">Sleep</th>
+                        <th class="px-3 py-2 text-center">Alc</th>
+                        <th class="px-3 py-2 text-right rounded-r-lg">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody" class="space-y-2">
+                    </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <script>
+        // --- 1. STATE & INIT ---
+        const form = document.getElementById('trackerForm');
+        const dateInput = document.getElementById('dateInput');
+        dateInput.valueAsDate = new Date();
+        document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString();
+
+        let entries = JSON.parse(localStorage.getItem('outlive_entries')) || [];
+        renderTable();
+
+        // --- 2. BLUETOOTH INTEGRATION (Web Bluetooth API) ---
+        const connectBtn = document.getElementById('connectBtn');
+        const liveHrDisplay = document.getElementById('liveHeartRate');
+        const hrValueSpan = document.getElementById('hrValue');
+
+        connectBtn.addEventListener('click', async () => {
+            try {
+                // Request Bluetooth Device with Heart Rate Service
+                const device = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: ['heart_rate'] }]
+                });
+
+                const server = await device.gatt.connect();
+                const service = await server.getPrimaryService('heart_rate');
+                const characteristic = await service.getCharacteristic('heart_rate_measurement');
+
+                // Start Notifications
+                await characteristic.startNotifications();
+                
+                // Update UI
+                connectBtn.innerHTML = `<i class="fa-solid fa-link"></i> Connected to ${device.name}`;
+                connectBtn.classList.remove('border-dashed');
+                connectBtn.classList.add('border-solid', 'border-green-500', 'text-green-400');
+                liveHrDisplay.classList.remove('hidden');
+
+                // Listen for HR changes
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    const value = event.target.value;
+                    const heartRate = value.getUint8(1); // Standard format for HR
+                    hrValueSpan.innerText = heartRate;
+                    
+                    // Auto-fill Zone 2 if it's currently 0 (just for fun/demo)
+                    // In a real app, we would average this over time.
+                });
+
+            } catch (error) {
+                console.error(error);
+                alert("Could not connect. Ensure you have a BLE device and are using Chrome/Edge.");
+            }
+        });
+
+
+        // --- 3. FORM LOGIC ---
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const entry = {
+                id: Date.now(),
+                date: dateInput.value,
+                zone2: parseInt(document.getElementById('zone2Input').value) || 0,
+                zone5: parseInt(document.getElementById('zone5Input').value) || 0,
+                strength: document.getElementById('strengthInput').checked,
+                sleep: parseFloat(document.getElementById('sleepInput').value) || 0,
+                alcohol: document.getElementById('alcoholInput').value === 'true',
+                protein: document.getElementById('proteinInput').checked
+            };
+
+            entries.unshift(entry);
+            localStorage.setItem('outlive_entries', JSON.stringify(entries));
+            form.reset();
+            dateInput.valueAsDate = new Date(); // Reset date
+            renderTable();
+        });
+
+        // --- 4. RENDER TABLE ---
+        function renderTable() {
+            const tbody = document.getElementById('logTableBody');
+            tbody.innerHTML = '';
+
+            entries.forEach(entry => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800 hover:bg-slate-800/50 transition';
+                
+                // Calculate Score (Simple Star Logic)
+                let score = 0;
+                if (entry.zone2 >= 30) score++;
+                if (entry.strength) score++;
+                if (entry.sleep >= 7.5) score++;
+                if (!entry.alcohol) score++;
+                if (entry.protein) score++;
+
+                const stars = '⭐'.repeat(score);
+
+                // Styling logic for Alcohol
+                const alcDisplay = entry.alcohol 
+                    ? '<span class="text-red-400 font-bold">YES</span>' 
+                    : '<span class="text-slate-600">-</span>';
+
+                tr.innerHTML = `
+                    <td class="px-3 py-3 font-medium text-white">${entry.date}</td>
+                    <td class="px-3 py-3 text-blue-400">${entry.zone2}m</td>
+                    <td class="px-3 py-3">${entry.sleep}h</td>
+                    <td class="px-3 py-3 text-center">${alcDisplay}</td>
+                    <td class="px-3 py-3 text-right text-xs">${stars}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
